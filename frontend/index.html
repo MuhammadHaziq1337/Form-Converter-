@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form Converter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --card: #ffffff;
+      --border: #e5e5e5;
+      --text: #1a1a1a;
+      --text-muted: #737373;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --error: #dc2626;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* Header */
+    .header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 8px;
+    }
+
+    .nav-btn {
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .nav-btn:hover {
+      color: var(--text);
+    }
+
+    .nav-btn.active {
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    /* Main Content */
+    .main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* Upload Page */
+    .upload-area {
+      background: var(--card);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 60px 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .upload-area:hover, .upload-area.dragover {
+      border-color: var(--primary);
+      background: #f0f7ff;
+    }
+
+    .upload-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--bg);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 28px;
+    }
+
+    .upload-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .upload-subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .upload-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .file-types {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .file-type {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--bg);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Processing State */
+    .processing {
+      display: none;
+      text-align: center;
+      padding: 60px 40px;
+    }
+
+    .processing.active {
+      display: block;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .processing-text {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    /* Preview Page */
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .preview-title {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .preview-meta {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .preview-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: var(--bg);
+      border-color: #d4d4d4;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    /* Form Renderer */
+    .form-container {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .form-section {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .form-section:last-child {
+      border-bottom: none;
+    }
+
+    .section-header {
+      background: #f9fafb;
+      padding: 16px 24px;
+      font-weight: 600;
+      font-size: 15px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Form Fields */
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .field-label.readonly {
+      font-weight: 400;
+      color: var(--text-muted);
+      background: #f9fafb;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border-left: 3px solid var(--border);
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .field-required {
+      color: var(--error);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    input:disabled,
+    textarea:disabled {
+      background: #f9fafb;
+      cursor: not-allowed;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    /* Checkbox & Radio */
+    .options-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .option-item input {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    .option-item span {
+      font-size: 14px;
+    }
+
+    /* Signature Field */
+    .signature-field {
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      background: #fafafa;
+    }
+
+    /* Tables */
+    .form-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .form-table th {
+      background: #f9fafb;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .form-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .form-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .form-table input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    .table-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    /* Radio/Select in table cells */
+    .cell-radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cell-radio-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .cell-radio-item input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    .form-table select {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 13px;
+      background: white;
+    }
+
+    .form-table select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* JSON Viewer Toggle */
+    .json-toggle {
+      margin-top: 24px;
+    }
+
+    .json-viewer {
+      display: none;
+      margin-top: 16px;
+      background: #1e1e1e;
+      border-radius: var(--radius);
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .json-viewer.active {
+      display: block;
+    }
+
+    .json-viewer pre {
+      color: #d4d4d4;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 80px 40px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .main {
+        padding: 24px 16px;
+      }
+
+      .upload-area {
+        padding: 40px 24px;
+      }
+
+      .section-content {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">📄</div>
+      Form Converter
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-page="upload">Upload</button>
+      <button class="nav-btn" data-page="preview">Preview</button>
+    </nav>
+  </header>
+
+  <main class="main">
+    <!-- Upload Page -->
+    <div id="upload-page" class="page active">
+      <div id="upload-area" class="upload-area">
+        <div class="upload-icon">📁</div>
+        <h2 class="upload-title">Upload your document</h2>
+        <p class="upload-subtitle">Drag and drop or click to browse</p>
+        <button class="upload-btn">
+          <span>Choose File</span>
+        </button>
+        <div class="file-types">
+          <span class="file-type">📄 PDF</span>
+          <span class="file-type">📝 DOCX</span>
+        </div>
+        <input type="file" id="file-input" accept=".pdf,.docx" hidden>
+      </div>
+
+      <div id="processing" class="processing">
+        <div class="spinner"></div>
+        <p class="processing-text">Converting document to form...</p>
+      </div>
+    </div>
+
+    <!-- Preview Page -->
+    <div id="preview-page" class="page">
+      <div id="empty-state" class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <p>No form loaded yet.<br>Upload a document to see the preview.</p>
+      </div>
+
+      <div id="preview-content" style="display: none;">
+        <div class="preview-header">
+          <div>
+            <h1 id="form-name" class="preview-title">Document Name</h1>
+            <p id="form-description" class="preview-meta">Description</p>
+          </div>
+          <div class="preview-actions">
+            <button id="toggle-json" class="btn">{ } View JSON</button>
+            <button id="reset-btn" class="btn">↻ Reset</button>
+          </div>
+        </div>
+
+        <div id="form-container" class="form-container">
+          <!-- Form sections render here -->
+        </div>
+
+        <div class="json-toggle">
+          <div id="json-viewer" class="json-viewer">
+            <pre id="json-content"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // State
+    let currentFormData = null;
+
+    // Elements
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const pages = document.querySelectorAll('.page');
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const processing = document.getElementById('processing');
+    const emptyState = document.getElementById('empty-state');
+    const previewContent = document.getElementById('preview-content');
+    const formContainer = document.getElementById('form-container');
+    const toggleJsonBtn = document.getElementById('toggle-json');
+    const jsonViewer = document.getElementById('json-viewer');
+    const jsonContent = document.getElementById('json-content');
+    const resetBtn = document.getElementById('reset-btn');
+
+    // Navigation
+    navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const page = btn.dataset.page;
+        navBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        pages.forEach(p => p.classList.remove('active'));
+        document.getElementById(`${page}-page`).classList.add('active');
+      });
+    });
+
+    // File Upload
+    uploadArea.addEventListener('click', () => fileInput.click());
+    
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleFile(file);
+    });
+
+    async function handleFile(file) {
+      const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!validTypes.includes(file.type) && !file.name.endsWith('.docx') && !file.name.endsWith('.pdf')) {
+        alert('Please upload a PDF or DOCX file');
+        return;
+      }
+
+      // Show processing
+      uploadArea.style.display = 'none';
+      processing.classList.add('active');
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/convert', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) throw new Error('Conversion failed');
+
+        const data = await response.json();
+        loadForm(data);
+
+        // Switch to preview
+        navBtns[1].click();
+      } catch (error) {
+        console.error(error);
+        // For demo: load sample data or show error
+        alert('Backend not connected. Load a JSON file directly for testing.');
+        
+        // Allow loading JSON directly for testing
+        const jsonInput = document.createElement('input');
+        jsonInput.type = 'file';
+        jsonInput.accept = '.json';
+        jsonInput.onchange = async (e) => {
+          const jsonFile = e.target.files[0];
+          const text = await jsonFile.text();
+          const data = JSON.parse(text);
+          loadForm(data);
+          navBtns[1].click();
+        };
+        jsonInput.click();
+      } finally {
+        uploadArea.style.display = 'block';
+        processing.classList.remove('active');
+      }
+    }
+
+    // Form Rendering
+    function loadForm(data) {
+      currentFormData = data;
+      document.getElementById('form-name').textContent = data.name || 'Untitled Form';
+      document.getElementById('form-description').textContent = data.description || '';
+      
+      formContainer.innerHTML = '';
+      
+      if (data.sections) {
+        data.sections.forEach(section => {
+          formContainer.appendChild(renderSection(section));
+        });
+      }
+
+      jsonContent.textContent = JSON.stringify(data, null, 2);
+      
+      emptyState.style.display = 'none';
+      previewContent.style.display = 'block';
+    }
+
+    function renderSection(section) {
+      const sectionEl = document.createElement('div');
+      sectionEl.className = 'form-section';
+      
+      sectionEl.innerHTML = `
+        <div class="section-header">${escapeHtml(section.title)}</div>
+        <div class="section-content"></div>
+      `;
+
+      const content = sectionEl.querySelector('.section-content');
+      
+      if (section.content) {
+        section.content.forEach(item => {
+          if (item.type === 'table') {
+            content.appendChild(renderTable(item));
+          } else {
+            content.appendChild(renderField(item));
+          }
+        });
+      }
+
+      return sectionEl;
+    }
+
+    function renderField(field) {
+      const fieldEl = document.createElement('div');
+      fieldEl.className = 'form-field';
+
+      // Label-only field (readonly text)
+      if (field.type === 'label') {
+        fieldEl.innerHTML = `<div class="field-label readonly">${escapeHtml(field.label).replace(/\\n/g, '<br>')}</div>`;
+        return fieldEl;
+      }
+
+      // Field with input
+      const required = field.required ? '<span class="field-required">*</span>' : '';
+      let inputHtml = '';
+
+      switch (field.type) {
+        case 'text':
+          inputHtml = `<input type="text" placeholder="${escapeHtml(field.placeholder || '')}" ${!field.editable ? 'disabled' : ''} value="${escapeHtml(field.value || '')}">`;
+          break;
+
+        case 'textarea':
+          inputHtml = `<textarea placeholder="${escapeHtml(field.placeholder || '')}" ${!field.editable ? 'disabled' : ''}>${escapeHtml(field.value || '')}</textarea>`;
+          break;
+
+        case 'number':
+          inputHtml = `<input type="number" placeholder="${escapeHtml(field.placeholder || '')}" ${!field.editable ? 'disabled' : ''} value="${escapeHtml(field.value || '')}">`;
+          break;
+
+        case 'date':
+          inputHtml = `<input type="date" ${!field.editable ? 'disabled' : ''} value="${field.value || ''}">`;
+          break;
+
+        case 'checkbox':
+          inputHtml = `<label class="option-item"><input type="checkbox" ${field.value ? 'checked' : ''} ${!field.editable ? 'disabled' : ''}><span>${escapeHtml(field.label)}</span></label>`;
+          fieldEl.innerHTML = inputHtml;
+          return fieldEl;
+
+        case 'radio':
+          if (field.options) {
+            inputHtml = `<div class="options-group">
+              ${field.options.map(opt => `
+                <label class="option-item">
+                  <input type="radio" name="${field.id}" value="${escapeHtml(opt)}" ${field.value === opt ? 'checked' : ''} ${!field.editable ? 'disabled' : ''}>
+                  <span>${escapeHtml(opt)}</span>
+                </label>
+              `).join('')}
+            </div>`;
+          }
+          break;
+
+        case 'checkbox_group':
+          if (field.options) {
+            inputHtml = `<div class="options-group">
+              ${field.options.map(opt => `
+                <label class="option-item">
+                  <input type="checkbox" value="${escapeHtml(opt)}" ${!field.editable ? 'disabled' : ''}>
+                  <span>${escapeHtml(opt)}</span>
+                </label>
+              `).join('')}
+            </div>`;
+          }
+          break;
+
+        case 'select':
+          if (field.options) {
+            inputHtml = `<select ${!field.editable ? 'disabled' : ''}>
+              <option value="">Select...</option>
+              ${field.options.map(opt => `<option value="${escapeHtml(opt)}" ${field.value === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
+            </select>`;
+          }
+          break;
+
+        case 'signature':
+          inputHtml = `<div class="signature-field">Click to sign</div>`;
+          break;
+
+        default:
+          inputHtml = `<input type="text" placeholder="${escapeHtml(field.placeholder || '')}">`;
+      }
+
+      fieldEl.innerHTML = `
+        <label class="field-label">${escapeHtml(field.label).replace(/\\n/g, '<br>')} ${required}</label>
+        ${inputHtml}
+      `;
+
+      return fieldEl;
+    }
+
+    function renderTable(table) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'form-field';
+
+      if (table.title) {
+        wrapper.innerHTML = `<div class="table-title">${escapeHtml(table.title)}</div>`;
+      }
+
+      const tableEl = document.createElement('table');
+      tableEl.className = 'form-table';
+
+      // Headers
+      if (table.headers) {
+        const thead = document.createElement('thead');
+        thead.innerHTML = `<tr>${table.headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>`;
+        tableEl.appendChild(thead);
+      }
+
+      // Rows
+      if (table.rows) {
+        const tbody = document.createElement('tbody');
+        table.rows.forEach((row, rowIndex) => {
+          const tr = document.createElement('tr');
+          if (row.cells) {
+            row.cells.forEach((cell, cellIndex) => {
+              const td = document.createElement('td');
+              
+              if (cell.input_type === 'checkbox') {
+                td.innerHTML = `<input type="checkbox" ${cell.value ? 'checked' : ''} ${!cell.editable ? 'disabled' : ''}>`;
+              } else if (cell.input_type === 'radio' && cell.options) {
+                // Radio group inside table cell
+                const radioName = `${table.id}_row${rowIndex}_cell${cellIndex}`;
+                td.innerHTML = `<div class="cell-radio-group">
+                  ${cell.options.map(opt => `
+                    <label class="cell-radio-item">
+                      <input type="radio" name="${radioName}" value="${escapeHtml(opt)}" ${cell.value === opt ? 'checked' : ''} ${!cell.editable ? 'disabled' : ''}>
+                      <span>${escapeHtml(opt)}</span>
+                    </label>
+                  `).join('')}
+                </div>`;
+              } else if (cell.input_type === 'select' && cell.options) {
+                // Select dropdown inside table cell
+                td.innerHTML = `<select ${!cell.editable ? 'disabled' : ''} style="padding: 6px 8px;">
+                  <option value="">Select...</option>
+                  ${cell.options.map(opt => `<option value="${escapeHtml(opt)}" ${cell.value === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
+                </select>`;
+              } else if (cell.input_type === 'text' && cell.editable) {
+                td.innerHTML = `<input type="text" value="${escapeHtml(cell.value || '')}" style="width: 100%; padding: 6px 8px;">`;
+              } else if (cell.input_type === 'date' && cell.editable) {
+                td.innerHTML = `<input type="date" value="${cell.value || ''}" style="padding: 6px 8px;">`;
+              } else {
+                // Static text cell - preserve newlines
+                td.innerHTML = escapeHtml(cell.value || '').replace(/\\n/g, '<br>');
+              }
+              
+              tr.appendChild(td);
+            });
+          }
+          tbody.appendChild(tr);
+        });
+        tableEl.appendChild(tbody);
+      }
+
+      wrapper.appendChild(tableEl);
+      return wrapper;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // JSON Toggle
+    toggleJsonBtn.addEventListener('click', () => {
+      jsonViewer.classList.toggle('active');
+      toggleJsonBtn.textContent = jsonViewer.classList.contains('active') ? '✕ Hide JSON' : '{ } View JSON';
+    });
+
+    // Reset
+    resetBtn.addEventListener('click', () => {
+      if (currentFormData) {
+        loadForm(currentFormData);
+      }
+    });
+
+    // Allow dropping JSON directly on preview page for testing
+    document.body.addEventListener('paste', async (e) => {
+      const text = e.clipboardData.getData('text');
+      try {
+        const data = JSON.parse(text);
+        if (data.sections) {
+          loadForm(data);
+          navBtns[1].click();
+        }
+      } catch (err) {
+        // Not JSON, ignore
+      }
+    });
+  </script>
+</body>
+</html>
+
