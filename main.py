@@ -4,15 +4,16 @@ import json
 import os
 from pathlib import Path
 
-# Fix Windows console encoding
+
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 
 from parser import convert_to_markdown
-from extractor import extract_document_data
+from extractor import extract_form_data
+from mapper import transform_to_client_dict
 
-def process_document(file_path: str, verbose: bool = False) -> dict:
+def process_document(file_path: str, verbose: bool = False, format: str = "client") -> dict:
 
     if verbose:
         print(f"[1/3] Parsing document: {file_path}")
@@ -32,10 +33,13 @@ def process_document(file_path: str, verbose: bool = False) -> dict:
         model_name = os.getenv("OPENAI_MODEL", "gpt-5")
         print(f"[3/3] Extracting data with {model_name}...")
     
-    document_data = extract_document_data(markdown_content)
+    document_data = extract_form_data(markdown_content)
     
-    # Step 3: Return validated data as dict
-    return document_data.model_dump()
+    # Step 3: Transform to client format if requested
+    if format == "client":
+        return transform_to_client_dict(document_data)
+    else:
+        return document_data.model_dump()
 
 
 def main():
@@ -47,6 +51,7 @@ def main():
 Examples:
     python main.py assessment.pdf
     python main.py form.docx --verbose
+    python main.py form.docx --format internal
         """
     )
     
@@ -59,12 +64,18 @@ Examples:
         action="store_true",
         help="Print intermediate processing steps"
     )
+    parser.add_argument(
+        "--format",
+        choices=["client", "internal"],
+        default="client",
+        help="Output format (default: client)"
+    )
     
     args = parser.parse_args()
     
     try:
         # Process the document
-        result = process_document(args.file_path, verbose=args.verbose)
+        result = process_document(args.file_path, verbose=args.verbose, format=args.format)
         
         # Format as JSON
         output_json = json.dumps(result, indent=2, ensure_ascii=False)

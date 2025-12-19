@@ -10,7 +10,6 @@ def extract_docx_metadata_docx2python(file_path: str) -> str:
     try:
         from docx2python import docx2python
         
-        # Extract all content including headers, footers, and text boxes
         with docx2python(file_path) as doc:
             extracted_text = []
             
@@ -63,9 +62,7 @@ def _flatten_docx2python_content(content) -> list:
 
 
 def _extract_docx_headers_footers_fallback(file_path: str) -> str:
-    """
-    Fallback method using python-docx if docx2python fails.
-    """
+
     try:
         from docx import Document
         
@@ -131,7 +128,7 @@ def convert_to_markdown(file_path: str) -> str:
     # Export to Markdown
     markdown_content = result.document.export_to_markdown()
     
-    # Prepend header/footer metadata so LLM can extract it
+   
     return header_footer_text + markdown_content
 
 

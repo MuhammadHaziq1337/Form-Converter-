@@ -414,7 +414,7 @@ RULES:
     
     if not context.section_was_complete:
         context_parts.append(f"""
-⚠️ PREVIOUS SECTION WAS CUT OFF.
+ PREVIOUS SECTION WAS CUT OFF.
 If this chunk starts without a header, content belongs to: "{context.last_section_title}"
 Create a section with the SAME title - system will merge automatically.""")
     

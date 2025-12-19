@@ -142,7 +142,7 @@ class ExtractionPipeline:
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         path = debug_dir / f"full_markdown_{timestamp}.md"
         path.write_text(self.markdown, encoding="utf-8")
-        self._log(f"💾 Saved debug markdown to: {path}")
+        self._log(f" Saved debug markdown to: {path}")
     
     def _determine_strategy(self, DocumentStrategy) -> None:
         """Determine optimal extraction strategy."""

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Form Converter</title>
+  <title>Form Converter </title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -324,7 +324,7 @@
     .field-label.readonly {
       font-weight: 400;
       color: var(--text-muted);
-      background: #f9fafb;
+      background: var(--card);
       padding: 12px 16px;
       border-radius: 8px;
       border-left: 3px solid var(--border);
@@ -478,6 +478,29 @@
       border-color: var(--primary);
     }
 
+    .form-table .table-input {
+      width: 100%;
+      min-width: 80px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 13px;
+      background: white;
+      box-sizing: border-box;
+    }
+
+    .form-table .table-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-table .table-input::placeholder {
+      color: #9ca3af;
+      font-size: 12px;
+    }
+
     /* JSON Viewer Toggle */
     .json-toggle {
       margin-top: 24px;
@@ -582,6 +605,7 @@
             <p id="form-description" class="preview-meta">Description</p>
           </div>
           <div class="preview-actions">
+            <button id="download-json" class="btn btn-primary">⬇ Download JSON</button>
             <button id="toggle-json" class="btn">{ } View JSON</button>
             <button id="reset-btn" class="btn">↻ Reset</button>
           </div>
@@ -711,8 +735,8 @@
       
       formContainer.innerHTML = '';
       
-      if (data.sections) {
-        data.sections.forEach(section => {
+      if (data.formStructure) {
+        data.formStructure.forEach(section => {
           formContainer.appendChild(renderSection(section));
         });
       }
@@ -728,18 +752,21 @@
       sectionEl.className = 'form-section';
       
       sectionEl.innerHTML = `
-        <div class="section-header">${escapeHtml(section.title)}</div>
+        <div class="section-header">
+          ${escapeHtml(section.sectionTitle)}
+          <span style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">${section.section}</span>
+        </div>
         <div class="section-content"></div>
       `;
 
       const content = sectionEl.querySelector('.section-content');
       
-      if (section.content) {
-        section.content.forEach(item => {
-          if (item.type === 'table') {
-            content.appendChild(renderTable(item));
+      if (section.fields) {
+        section.fields.forEach(field => {
+          if (field.fieldType === 'table' && field.table) {
+            content.appendChild(renderTable(field));
           } else {
-            content.appendChild(renderField(item));
+            content.appendChild(renderField(field));
           }
         });
       }
@@ -752,8 +779,8 @@
       fieldEl.className = 'form-field';
 
       // Label-only field (readonly text)
-      if (field.type === 'label') {
-        fieldEl.innerHTML = `<div class="field-label readonly">${escapeHtml(field.label).replace(/\\n/g, '<br>')}</div>`;
+      if (field.fieldType === 'label') {
+        fieldEl.innerHTML = `<div class="field-label readonly">${escapeHtml(field.label).replace(/\n/g, '<br>')}</div>`;
         return fieldEl;
       }
 
@@ -761,25 +788,25 @@
       const required = field.required ? '<span class="field-required">*</span>' : '';
       let inputHtml = '';
 
-      switch (field.type) {
+      switch (field.fieldType) {
         case 'text':
-          inputHtml = `<input type="text" placeholder="${escapeHtml(field.placeholder || '')}" ${!field.editable ? 'disabled' : ''} value="${escapeHtml(field.value || '')}">`;
+          inputHtml = `<input type="text" placeholder="${escapeHtml(field.placeholder || '')}" value="${escapeHtml(field.value || '')}">`;
           break;
 
         case 'textarea':
-          inputHtml = `<textarea placeholder="${escapeHtml(field.placeholder || '')}" ${!field.editable ? 'disabled' : ''}>${escapeHtml(field.value || '')}</textarea>`;
+          inputHtml = `<textarea placeholder="${escapeHtml(field.placeholder || '')}">${escapeHtml(field.value || '')}</textarea>`;
           break;
 
         case 'number':
-          inputHtml = `<input type="number" placeholder="${escapeHtml(field.placeholder || '')}" ${!field.editable ? 'disabled' : ''} value="${escapeHtml(field.value || '')}">`;
+          inputHtml = `<input type="number" placeholder="${escapeHtml(field.placeholder || '')}" value="${escapeHtml(field.value || '')}">`;
           break;
 
         case 'date':
-          inputHtml = `<input type="date" ${!field.editable ? 'disabled' : ''} value="${field.value || ''}">`;
+          inputHtml = `<input type="date" value="${field.value || ''}">`;
           break;
 
         case 'checkbox':
-          inputHtml = `<label class="option-item"><input type="checkbox" ${field.value ? 'checked' : ''} ${!field.editable ? 'disabled' : ''}><span>${escapeHtml(field.label)}</span></label>`;
+          inputHtml = `<label class="option-item"><input type="checkbox" ${field.value ? 'checked' : ''}><span>${escapeHtml(field.label)}</span></label>`;
           fieldEl.innerHTML = inputHtml;
           return fieldEl;
 
@@ -788,7 +815,7 @@
             inputHtml = `<div class="options-group">
               ${field.options.map(opt => `
                 <label class="option-item">
-                  <input type="radio" name="${field.id}" value="${escapeHtml(opt)}" ${field.value === opt ? 'checked' : ''} ${!field.editable ? 'disabled' : ''}>
+                  <input type="radio" name="${field.fieldName}" value="${escapeHtml(opt)}" ${field.value === opt ? 'checked' : ''}>
                   <span>${escapeHtml(opt)}</span>
                 </label>
               `).join('')}
@@ -801,7 +828,7 @@
             inputHtml = `<div class="options-group">
               ${field.options.map(opt => `
                 <label class="option-item">
-                  <input type="checkbox" value="${escapeHtml(opt)}" ${!field.editable ? 'disabled' : ''}>
+                  <input type="checkbox" value="${escapeHtml(opt)}">
                   <span>${escapeHtml(opt)}</span>
                 </label>
               `).join('')}
@@ -811,7 +838,7 @@
 
         case 'select':
           if (field.options) {
-            inputHtml = `<select ${!field.editable ? 'disabled' : ''}>
+            inputHtml = `<select>
               <option value="">Select...</option>
               ${field.options.map(opt => `<option value="${escapeHtml(opt)}" ${field.value === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
             </select>`;
@@ -827,66 +854,66 @@
       }
 
       fieldEl.innerHTML = `
-        <label class="field-label">${escapeHtml(field.label).replace(/\\n/g, '<br>')} ${required}</label>
+        <label class="field-label">${escapeHtml(field.label).replace(/\n/g, '<br>')} ${required}</label>
         ${inputHtml}
       `;
 
       return fieldEl;
     }
 
-    function renderTable(table) {
+    function renderTable(field) {
       const wrapper = document.createElement('div');
       wrapper.className = 'form-field';
 
-      if (table.title) {
-        wrapper.innerHTML = `<div class="table-title">${escapeHtml(table.title)}</div>`;
+      // field.label is the table title
+      if (field.label) {
+        wrapper.innerHTML = `<div class="table-title">${escapeHtml(field.label)}</div>`;
       }
 
       const tableEl = document.createElement('table');
       tableEl.className = 'form-table';
 
-      // Headers
-      if (table.headers) {
+      const table = field.table;
+      if (!table) return wrapper;
+
+      // Headers from columns
+      if (table.columns) {
         const thead = document.createElement('thead');
-        thead.innerHTML = `<tr>${table.headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>`;
+        thead.innerHTML = `<tr>${table.columns.map(col => `<th style="text-align: ${col.align || 'left'}">${escapeHtml(col.title)}</th>`).join('')}</tr>`;
         tableEl.appendChild(thead);
       }
 
-      // Rows
+      // Rows - now using col_1, col_2 format
       if (table.rows) {
         const tbody = document.createElement('tbody');
         table.rows.forEach((row, rowIndex) => {
           const tr = document.createElement('tr');
-          if (row.cells) {
-            row.cells.forEach((cell, cellIndex) => {
+          
+          // Iterate over columns to get values from row dict
+          if (table.columns) {
+            table.columns.forEach((col, cellIndex) => {
               const td = document.createElement('td');
+              td.style.textAlign = col.align || 'left';
               
-              if (cell.input_type === 'checkbox') {
-                td.innerHTML = `<input type="checkbox" ${cell.value ? 'checked' : ''} ${!cell.editable ? 'disabled' : ''}>`;
-              } else if (cell.input_type === 'radio' && cell.options) {
-                // Radio group inside table cell
-                const radioName = `${table.id}_row${rowIndex}_cell${cellIndex}`;
-                td.innerHTML = `<div class="cell-radio-group">
-                  ${cell.options.map(opt => `
-                    <label class="cell-radio-item">
-                      <input type="radio" name="${radioName}" value="${escapeHtml(opt)}" ${cell.value === opt ? 'checked' : ''} ${!cell.editable ? 'disabled' : ''}>
-                      <span>${escapeHtml(opt)}</span>
-                    </label>
-                  `).join('')}
-                </div>`;
-              } else if (cell.input_type === 'select' && cell.options) {
-                // Select dropdown inside table cell
-                td.innerHTML = `<select ${!cell.editable ? 'disabled' : ''} style="padding: 6px 8px;">
-                  <option value="">Select...</option>
-                  ${cell.options.map(opt => `<option value="${escapeHtml(opt)}" ${cell.value === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
-                </select>`;
-              } else if (cell.input_type === 'text' && cell.editable) {
-                td.innerHTML = `<input type="text" value="${escapeHtml(cell.value || '')}" style="width: 100%; padding: 6px 8px;">`;
-              } else if (cell.input_type === 'date' && cell.editable) {
-                td.innerHTML = `<input type="date" value="${cell.value || ''}" style="padding: 6px 8px;">`;
+              // Check if this column is interactive
+              if (col.type === 'radio') {
+                // Render radio button
+                const radioId = `${field.fieldName}_row${rowIndex}_${col.key}`;
+                const radioName = `${field.fieldName}_row${rowIndex}_${col.radioGroup || 'group'}`;
+                td.innerHTML = `<input type="radio" id="${radioId}" name="${radioName}" value="${col.value || col.key}">`;
+              } else if (col.type === 'checkbox') {
+                // Render checkbox
+                const checkboxId = `${field.fieldName}_row${rowIndex}_${col.key}`;
+                td.innerHTML = `<input type="checkbox" id="${checkboxId}" value="${col.value || col.key}">`;
+              } else if (col.editable) {
+                // Editable text input - render input field
+                const inputId = `${field.fieldName}_row${rowIndex}_${col.key}`;
+                const value = row[col.key] || '';
+                td.innerHTML = `<input type="text" id="${inputId}" name="${inputId}" value="${escapeHtml(value)}" class="table-input" placeholder="Enter ${col.title.toLowerCase()}">`;
               } else {
-                // Static text cell - preserve newlines
-                td.innerHTML = escapeHtml(cell.value || '').replace(/\\n/g, '<br>');
+                // Regular text cell (read-only)
+                const value = row[col.key] || '';
+                td.innerHTML = escapeHtml(value).replace(/\n/g, '<br>');
               }
               
               tr.appendChild(td);
@@ -916,6 +943,27 @@
       toggleJsonBtn.textContent = jsonViewer.classList.contains('active') ? '✕ Hide JSON' : '{ } View JSON';
     });
 
+    // Download JSON
+    const downloadJsonBtn = document.getElementById('download-json');
+    downloadJsonBtn.addEventListener('click', () => {
+      if (!currentFormData) {
+        alert('No form data to download');
+        return;
+      }
+      
+      const jsonStr = JSON.stringify(currentFormData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (currentFormData.name || 'converted-form').replace(/[^a-z0-9]/gi, '_') + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
     // Reset
     resetBtn.addEventListener('click', () => {
       if (currentFormData) {
@@ -928,7 +976,7 @@
       const text = e.clipboardData.getData('text');
       try {
         const data = JSON.parse(text);
-        if (data.sections) {
+        if (data.formStructure || data.sections) {
           loadForm(data);
           navBtns[1].click();
         }

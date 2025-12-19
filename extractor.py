@@ -29,38 +29,36 @@ from constants import (
     DUPLICATE_WARNING_THRESHOLD_RATIO,
     ESTIMATED_TOKENS_PER_SECTION_METADATA,
     TOKENS_PER_SECTION_ESTIMATE,
+    ESTIMATED_TOKENS_PER_FIELD,
+    ESTIMATED_TOKENS_PER_TABLE,
+    ESTIMATED_TOKENS_PER_SECTION,
+    MODEL_CONTEXT_TOKENS,
+    MAX_OUTPUT_TOKENS,
+    SYSTEM_PROMPT_TOKENS,
+    SAFETY_MARGIN_TOKENS,
+    AVAILABLE_INPUT_TOKENS,
+    SAFE_OUTPUT_TOKENS,
+    MAX_SECTIONS_PER_BATCH,
+    SUPER_CHUNK_THRESHOLD_TOKENS,
+    RATE_LIMIT_RETRY_BASE_DELAY,
+    CHUNK_THRESHOLD_TOKENS,
+    CHUNK_MAX_SIZE_TOKENS,
+    CHUNK_MIN_SIZE_TOKENS,
+    CHUNK_MAX_SIZE,
+    CHUNK_MIN_SIZE,
+    OVERLAP_SIZE,
 )
 
 load_dotenv(Path(__file__).parent / ".env")
+MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-5")
 
-# Configuration - These are defaults, actual values come from config
-MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-5-mini")
-
-# Initialize tiktoken encoder (gpt-5 uses o200k_base encoding)
+# Initialize tiktoken encoder
 try:
     TOKENIZER = tiktoken.get_encoding("o200k_base")
 except Exception:
-    # Fallback to cl100k_base if o200k_base not available
     TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
-MODEL_CONTEXT_TOKENS = 400_000       
-MAX_OUTPUT_TOKENS = 128_000
-
-
-SYSTEM_PROMPT_TOKENS = 2_500        
-SAFETY_MARGIN_TOKENS = 5_000        
-
-
-AVAILABLE_INPUT_TOKENS = (
-    MODEL_CONTEXT_TOKENS 
-    - SYSTEM_PROMPT_TOKENS 
-    - SAFETY_MARGIN_TOKENS
-)  # = 392,500 tokens for GPT-5-mini
-
-SAFE_OUTPUT_TOKENS = 64_000          
-MAX_SECTIONS_PER_BATCH = 25          
-
-SUPER_CHUNK_THRESHOLD_TOKENS = 200_000  
+DEFAULT_CONFIG = get_default_config()
 
 
 def get_model_limits(config: 'ExtractionConfig') -> dict:
@@ -71,25 +69,6 @@ def get_model_limits(config: 'ExtractionConfig') -> dict:
         'available_input': config.available_input_tokens,
         'safe_output': config.safe_output_tokens,
     }
-
-ESTIMATED_TOKENS_PER_FIELD = 80
-ESTIMATED_TOKENS_PER_TABLE = 500
-ESTIMATED_TOKENS_PER_SECTION = 150
-
-RATE_LIMIT_RETRY_BASE_DELAY = 1.0
-
-
-CHUNK_THRESHOLD_TOKENS = int(AVAILABLE_INPUT_TOKENS * 0.90)   # ~353k
-CHUNK_MAX_SIZE_TOKENS = int(AVAILABLE_INPUT_TOKENS * 0.95)    # ~373k
-CHUNK_MIN_SIZE_TOKENS = int(AVAILABLE_INPUT_TOKENS * 0.50)    # ~196k
-
-# Character-based approximations
-CHUNK_MAX_SIZE = int(CHUNK_MAX_SIZE_TOKENS * 2.5) 
-CHUNK_MIN_SIZE = int(CHUNK_MIN_SIZE_TOKENS * 2.5) 
-OVERLAP_SIZE = 4_000  # Increased overlap for safety
-
-# Default configuration for backward compatibility
-DEFAULT_CONFIG = get_default_config()
 
 
 def estimate_tokens(text: str) -> int:
@@ -161,8 +140,6 @@ def _clean_markdown(text: str) -> str:
     return result
 
 class ClientManager:
-    """Manages OpenAI client lifecycle with singleton pattern."""
-    
     _sync_client: Optional[OpenAI] = None
     
     @classmethod
@@ -197,10 +174,10 @@ def get_client() -> OpenAI:
 class SemanticUnit:
     """A complete semantic unit (section header + all its content)."""
     header: str  
-    content: str  # Everything until the next header
-    start_pos: int  # Character position in original markdown
-    end_pos: int  # Character position where this unit ends
-    contains_table: bool = False  # Whether this unit contains a table
+    content: str  
+    start_pos: int  
+    end_pos: int  
+    contains_table: bool = False  
     
     @property
     def full_text(self) -> str:
@@ -518,7 +495,7 @@ def _split_on_paragraphs(text: str, max_size: int = None) -> List[str]:
     for para in paragraphs:
         potential_size = len(current_chunk) + len(para) + 2
         
-        # Same logic as greedy_combine: don't create tiny chunks
+        
         should_add = (
             potential_size <= max_size or
             len(current_chunk) < min_size
@@ -551,16 +528,16 @@ def _hard_split(text: str, max_size: int = None) -> List[str]:
         end = min(start + max_size, len(text))
         
         if end == len(text):
-            # Last chunk - append whatever is left
+            # Last chunk 
             remaining = text[start:]
-            # If last chunk is tiny and we have previous chunks, merge with previous
+            
             if len(remaining) < int(max_size * 0.3) and chunks:
                 chunks[-1] = chunks[-1] + remaining
             else:
                 chunks.append(remaining)
             break
         
-        # Find a clean break point (search in last 20% of chunk for newline)
+        
         search_start = start + int(max_size * 0.8)
         break_point = text.rfind('\n', search_start, end)
         if break_point == -1:
@@ -591,7 +568,7 @@ def _validate_chunks(chunks: List[str]) -> List[str]:
     if len(chunks) <= 1:
         return chunks
     
-    validated = [chunks[0]]  # First chunk is always valid
+    validated = [chunks[0]] 
     
     for i, chunk in enumerate(chunks[1:], 1):
         stripped = chunk.strip()
@@ -1732,21 +1709,12 @@ def merge_batch_results(
     
     return all_sections
 
-
-# =============================================================================
-# CONTINUOUS STREAMING EXTRACTION (Zero-Gap Physical Chunking)
-# =============================================================================
-
 def create_streaming_chunks(
     markdown: str,
     max_tokens: int = None,
     overlap_chars: int = 500
 ) -> List[Tuple[str, int, int]]:
-    """
-    Create physically contiguous chunks with zero gaps.
-    
-    Returns: List of (chunk_text, start_pos, end_pos) tuples
-    """
+
     from schemas import StreamingState
     
     if max_tokens is None:
@@ -1783,10 +1751,7 @@ def create_streaming_chunks(
         # Extract chunk
         chunk_text = markdown[current_pos:actual_end]
         chunks.append((chunk_text, current_pos, actual_end))
-        
-        # Next chunk starts where this one ended (with optional overlap for context)
-        # For physical accuracy, we start exactly at actual_end
-        # The overlap is handled via state injection, not text duplication
+
         current_pos = actual_end
     
     return chunks
@@ -1830,7 +1795,7 @@ def build_streaming_prompt(state: 'StreamingState') -> str:
     
     if state.chunk_index > 0:
         # This is a continuation chunk - inject context
-        context_parts = ["\n## ⚠️ CONTINUATION CONTEXT (CRITICAL)"]
+        context_parts = ["\n##  CONTINUATION CONTEXT (CRITICAL)"]
         context_parts.append(f"This is chunk {state.chunk_index + 1} of a large document.")
         
         if state.active_section_title:
@@ -1930,7 +1895,7 @@ def extract_streaming_chunk(
     parsed = completion.choices[0].message.parsed
     
     if parsed is None:
-        print(f"[Extractor]   ⚠️  Chunk {chunk_index} returned null, skipping")
+        print(f"[Extractor]     Chunk {chunk_index} returned null, skipping")
         return [], state
     
     sections = parsed.sections if parsed.sections else []
@@ -1960,7 +1925,7 @@ def extract_streaming_chunk(
     new_state.overlap_text = chunk_text[-500:] if len(chunk_text) > 500 else chunk_text
     
     if finish_reason == 'length':
-        print(f"[Extractor]   ⚠️  Chunk {chunk_index} was truncated")
+        print(f"[Extractor]     Chunk {chunk_index} was truncated")
     
     return sections, new_state
 
@@ -2029,11 +1994,7 @@ def execute_streaming_extraction(
     markdown: str,
     config: ExtractionConfig = DEFAULT_CONFIG
 ) -> List[FormSection]:
-    """
-    Execute the full streaming extraction pipeline.
-    
-    This is the main entry point for the zero-gap continuous streaming approach.
-    """
+
     from schemas import StreamingState
     
     # Create physical chunks
@@ -2061,7 +2022,6 @@ def execute_streaming_extraction(
     print(f"[Extractor]   Merged: {len(all_sections)} → {len(merged_sections)} sections")
     
     return merged_sections
-
 
 def get_dynamic_validation_threshold(markdown: str) -> float:
 
@@ -2272,7 +2232,7 @@ def _extract_full_document(markdown: str, config: ExtractionConfig = DEFAULT_CON
         
         # Low coverage - retry if we have attempts left
         if attempt < max_retries:
-            print(f"[Extractor]   ⚠️  Low extraction ({section_count} sections, {field_count} fields), retrying...")
+            print(f"[Extractor]     Low extraction ({section_count} sections, {field_count} fields), retrying...")
             last_result = parsed_data
             continue
         else:

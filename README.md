@@ -59,7 +59,7 @@ print(result.document)
 Edit `.env`:
 
 ```bash
-OPENAI_MODEL=gpt-5-mini        # Default model
+OPENAI_MODEL=gpt-5             # Default model (gpt-5 for best accuracy)
 HYBRID_MODEL=true              # Auto-switch to GPT-5 for large docs
 EXTRACTOR_DEBUG=false          # Save debug markdown files
 ```

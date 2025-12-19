@@ -6,12 +6,13 @@ import tempfile
 import threading
 from pathlib import Path
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 import cgi
 
 # Import your existing pipeline
 from parser import convert_to_markdown
 from extractor import extract_form_data
+from mapper import transform_to_client_dict
 
 # Auto-reload on file changes
 try:
@@ -20,7 +21,7 @@ try:
     WATCHDOG_AVAILABLE = True
 except ImportError:
     WATCHDOG_AVAILABLE = False
-    print("⚠️  Install 'watchdog' for auto-reload: pip install watchdog")
+    print("  Install 'watchdog' for auto-reload: pip install watchdog")
 
 
 class FormConverterHandler(SimpleHTTPRequestHandler):
@@ -32,13 +33,23 @@ class FormConverterHandler(SimpleHTTPRequestHandler):
     
     def do_POST(self):
         """Handle POST requests for file upload."""
-        if self.path == '/api/convert':
-            self.handle_convert()
+        parsed_url = urlparse(self.path)
+        if parsed_url.path == '/api/convert':
+            # Parse query params for format selection
+            query_params = parse_qs(parsed_url.query)
+            # Default to client format (UI-ready)
+            output_format = query_params.get('format', ['client'])[0]
+            self.handle_convert(output_format=output_format)
         else:
             self.send_error(404, "Not Found")
     
-    def handle_convert(self):
-        """Convert uploaded document to JSON."""
+    def handle_convert(self, output_format: str = "internal"):
+        """
+        Convert uploaded document to JSON.
+        
+        Args:
+            output_format: 'internal' (default) or 'client' for UI-ready format
+        """
         try:
             # Parse multipart form data
             content_type = self.headers.get('Content-Type', '')
@@ -81,8 +92,13 @@ class FormConverterHandler(SimpleHTTPRequestHandler):
                 # Step 2: Extract structured data
                 form_data = extract_form_data(markdown)
                 
-                # Convert to dict for JSON response
-                result = form_data.model_dump()
+                # Convert to dict based on requested format
+                if output_format == "client":
+                    result = transform_to_client_dict(form_data)
+                    print(f"  → Using client format (UI-ready)")
+                else:
+                    result = form_data.model_dump()
+                    print(f"  → Using internal format")
                 
                 # Send response
                 self.send_response(200)
@@ -123,8 +139,8 @@ class ReloadHandler(FileSystemEventHandler):
             now = time.time()
             if event.src_path not in self.last_modified or now - self.last_modified[event.src_path] > 1:
                 self.last_modified[event.src_path] = now
-                print(f"\n🔄 Detected change in {Path(event.src_path).name}")
-                print("🔄 Restarting server...")
+                print(f"\n Detected change in {Path(event.src_path).name}")
+                print(" Restarting server...")
                 self.restart_callback()
 
 
@@ -153,12 +169,12 @@ def run_server(port=8000, auto_reload=True):
     if auto_reload and WATCHDOG_AVAILABLE:
         # Set up file watcher
         def restart():
-            print("⏹️  Stopping server...")
+            print("⏹  Stopping server...")
             server.shutdown()
             observer.stop()
             observer.join()
             # Restart process
-            print("🚀 Restarting...")
+            print(" Restarting...")
             os.execv(sys.executable, [sys.executable] + sys.argv)
         
         observer = Observer()
@@ -166,12 +182,12 @@ def run_server(port=8000, auto_reload=True):
         # Watch current directory for .py file changes
         observer.schedule(event_handler, path='.', recursive=False)
         observer.start()
-        print("👀 Watching for file changes...")
+        print(" Watching for file changes...")
     
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n⏹️  Server stopped.")
+        print("\n  Server stopped.")
         if observer:
             observer.stop()
             observer.join()
