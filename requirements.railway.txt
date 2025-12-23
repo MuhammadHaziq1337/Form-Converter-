@@ -40,3 +40,6 @@ transformers==4.57.3
 # HTTP/JSON
 requests==2.32.5
 httpx==0.28.1
+
+# File watching for auto-reload (optional, gracefully handled if missing)
+watchdog==4.0.0
