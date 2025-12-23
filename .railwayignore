@@ -1,0 +1,18 @@
+# Don't upload these to Railway
+debug_markdown/
+__pycache__/
+*.pyc
+.venv/
+.env
+*.docx
+*.pdf
+wew.json
+new.json
+old.json
+merged.json
+CIA.json
+PTR.json
+test_table.html
+compare.py
+merge_extractions.py
+.git/
