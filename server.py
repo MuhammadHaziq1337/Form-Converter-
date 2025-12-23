@@ -30,6 +30,36 @@ class FormConverterHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         # Serve from frontend directory
         super().__init__(*args, directory="frontend", **kwargs)
+
+   
+    @property
+    def cors_origin(self) -> str:
+       
+        return os.getenv("FRONTEND_ORIGIN", "*")
+
+    def _set_cors_headers(self):
+        self.send_header('Access-Control-Allow-Origin', self.cors_origin)
+        self.send_header('Vary', 'Origin')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+
+    def end_headers(self):
+       
+        try:
+            self._set_cors_headers()
+        except Exception:
+            pass
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        # CORS preflight support
+        parsed_url = urlparse(self.path)
+        if parsed_url.path == '/api/convert':
+            self.send_response(204)
+            self._set_cors_headers()
+            self.end_headers()
+        else:
+            self.send_error(404, "Not Found")
     
     def do_POST(self):
         """Handle POST requests for file upload."""
@@ -144,9 +174,12 @@ class ReloadHandler(FileSystemEventHandler):
                 self.restart_callback()
 
 
-def run_server(port=8000, auto_reload=True):
-    """Start the development server with optional auto-reload."""
-    server = HTTPServer(('localhost', port), FormConverterHandler)
+def run_server(port=8000, host='localhost', auto_reload=True):
+    """Start the server with optional auto-reload.
+
+    In production (Railway), bind to host '0.0.0.0' and the provided PORT.
+    """
+    server = HTTPServer((host, port), FormConverterHandler)
     
     reload_msg = "Auto-reload: ENABLED" if auto_reload and WATCHDOG_AVAILABLE else "Auto-reload: DISABLED"
     
@@ -154,7 +187,7 @@ def run_server(port=8000, auto_reload=True):
 ╔══════════════════════════════════════════════════╗
 ║         Form Converter - Dev Server              ║
 ╠══════════════════════════════════════════════════╣
-║  http://localhost:{port}                          ║
+║  http://{host}:{port}                          ║
 ║  {reload_msg:<48} ║
 ║                                                  ║
 ║  • Upload PDF/DOCX to convert                    ║
@@ -195,5 +228,11 @@ def run_server(port=8000, auto_reload=True):
 
 
 if __name__ == '__main__':
-    run_server()
+    # Derive host/port from env for cloud platforms (Railway sets PORT)
+    env_port = int(os.getenv('PORT', '8000'))
+    # If PORT is set (e.g., Railway), bind to all interfaces
+    env_host = os.getenv('HOST', '0.0.0.0' if os.getenv('PORT') else 'localhost')
+    # Disable auto-reload in production
+    auto_reload = not os.getenv('PORT')
+    run_server(port=env_port, host=env_host, auto_reload=auto_reload)
 
