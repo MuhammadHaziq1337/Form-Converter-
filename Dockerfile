@@ -5,7 +5,10 @@ WORKDIR /app
 # Copy only the Railway requirements
 COPY requirements.railway.txt .
 
-# Install lightweight dependencies first
+# Install torch CPU version first (lightweight, no CUDA)
+RUN pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+
+# Install lightweight dependencies
 RUN pip install --no-cache-dir -r requirements.railway.txt
 
 # Install docling WITHOUT optional ML dependencies
