@@ -1,7 +1,7 @@
 # Minimal Railway deployment dependencies
-# Full docling but excludes heavy ML model packages (torch, transformers, CUDA)
+# Strategy: Install docling WITHOUT its optional ML dependencies
 
-# Core
+# Core Python packages
 pydantic==2.12.5
 pydantic-settings==2.12.0
 python-dotenv==1.2.1
@@ -10,7 +10,7 @@ typing-extensions==4.15.0
 # OpenAI API
 openai==2.14.0
 
-# Document parsing
+# Document parsing base libraries
 python-docx==1.2.0
 pypdfium2==4.30.0
 beautifulsoup4==4.14.3
@@ -19,9 +19,21 @@ Pillow==11.3.0
 openpyxl==3.1.5
 docx2python==3.5.0
 
-# Docling - full package (no separate core/parse)
-# This includes DocumentConverter but NOT the heavy ML models
-docling==2.65.0
+# Docling lightweight dependencies (required for DocumentConverter)
+# Install these BEFORE docling to satisfy its requirements
+docling-core==2.57.0
+docling-parse==4.7.2
+tabulate==0.9.0
+python-pptx==1.0.2
+python-dateutil==2.9.0.post0
+pytz==2025.2
+numpy==2.2.6
+pyyaml==6.0.3
+jsonlines==4.0.0
+filetype==1.2.0
+omegaconf==2.3.0
+tqdm==4.67.1
+huggingface-hub==0.36.0
 
 # HTTP/JSON
 requests==2.32.5

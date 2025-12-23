@@ -6,6 +6,7 @@
   <title>Form Converter </title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="env-config.js"></script>
   <style>
     :root {
       --bg: #fafafa;
@@ -625,6 +626,10 @@
   </main>
 
   <script>
+    // Configuration: API base URL
+    // Set via environment variable in Vercel (or defaults to same-origin for local dev)
+    const API_BASE_URL = window.API_URL || '';
+
     // State
     let currentFormData = null;
 
@@ -692,7 +697,7 @@
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('/api/convert', {
+        const response = await fetch(`${API_BASE_URL}/api/convert`, {
           method: 'POST',
           body: formData
         });

@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd frontend && bash vercel-build.sh",
+  "outputDirectory": "frontend",
+  "framework": null,
+  "installCommand": "echo 'No dependencies to install'"
+}

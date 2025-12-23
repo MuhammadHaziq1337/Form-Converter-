@@ -5,11 +5,12 @@ WORKDIR /app
 # Copy only the Railway requirements
 COPY requirements.railway.txt .
 
-# Install dependencies
-# Note: docling will be installed but its heavy ML model package (docling-ibm-models) is NOT included
-RUN pip install --no-cache-dir -r requirements.railway.txt && \
-    # Remove any heavy model files that might have been pulled in
-    pip show docling-ibm-models > /dev/null 2>&1 && pip uninstall -y docling-ibm-models accelerate torch transformers || true
+# Install lightweight dependencies first
+RUN pip install --no-cache-dir -r requirements.railway.txt
+
+# Install docling WITHOUT optional ML dependencies
+# This gives us DocumentConverter but skips torch/transformers/cuda
+RUN pip install --no-cache-dir --no-deps docling==2.65.0
 
 # Copy the entire app
 COPY . .
