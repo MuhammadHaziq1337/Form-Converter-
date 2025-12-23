@@ -35,6 +35,11 @@ omegaconf==2.3.0
 tqdm==4.67.1
 huggingface-hub==0.36.0
 
+# Lightweight ML libraries (CPU-only, no CUDA - ~200MB vs 2GB+)
+# These are imported by docling internally but we use CPU versions
+torch==2.9.1+cpu --extra-index-url https://download.pytorch.org/whl/cpu
+transformers==4.57.3
+
 # HTTP/JSON
 requests==2.32.5
 httpx==0.28.1
