@@ -1,5 +1,5 @@
 # Minimal Railway deployment dependencies
-# Excludes heavy ML packages (torch, CUDA) to stay under 4GB limit
+# Full docling but excludes heavy ML model packages (torch, transformers, CUDA)
 
 # Core
 pydantic==2.12.5
@@ -10,16 +10,18 @@ typing-extensions==4.15.0
 # OpenAI API
 openai==2.14.0
 
-# Document parsing (lightweight versions only)
+# Document parsing
 python-docx==1.2.0
 pypdfium2==4.30.0
 beautifulsoup4==4.14.3
 lxml==6.0.2
 Pillow==11.3.0
 openpyxl==3.1.5
+docx2python==3.5.0
 
-# Docling minimal (no ML models)
-docling>=2.0.0
+# Docling - full package (no separate core/parse)
+# This includes DocumentConverter but NOT the heavy ML models
+docling==2.65.0
 
 # HTTP/JSON
 requests==2.32.5
