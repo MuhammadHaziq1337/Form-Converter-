@@ -13,7 +13,7 @@ RADIO_COLUMN_PATTERNS = [
     "satisfactory", "unsatisfactory",
     "pass", "fail",
     "met", "not met", "not yet met",
-    "✓", "✗", "☐", "☑", "□", "■"
+    "✓", "✗", "☐", "⬜", "☑", "□", "■"
 ]
 
 # Patterns that indicate the first/main content column (not interactive)

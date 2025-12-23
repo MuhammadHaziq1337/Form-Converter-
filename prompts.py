@@ -68,8 +68,10 @@ FIELD_TYPE_RULES = """### Field Type Detection
 ### Checkbox vs Radio Detection
 - [ ] Yes [ ] No → type: "radio", options: ["Yes", "No"]
 - ☐ Yes ☐ No → type: "radio", options: ["Yes", "No"]
+- ⬜ Yes ⬜ No → type: "radio", options: ["Yes", "No"]
 - "Select all that apply" → type: "checkbox_group"
-- Single standalone [ ] I agree → type: "checkbox" """
+- Single standalone [ ] I agree → type: "checkbox"
+- Single standalone ⬜ I agree → type: "checkbox" """
 
 
 TABLE_HANDLING_RULES = """### Table Handling
@@ -81,7 +83,7 @@ Every table in the document must be extracted as type="table".
 **Rules:**
 - Extract ALL tables exactly as they appear
 - Each `TableCell` MUST include the explicit `column` header name
-- For checkbox columns (☐ or [ ]): set input_type="checkbox", editable=true
+- For checkbox columns (☐, ⬜ or [ ]): set input_type="checkbox", editable=true
 - For empty cells: set input_type="text", editable=true  
 - For pre-filled cells: set editable=false, include the value
 - Preserve row order exactly

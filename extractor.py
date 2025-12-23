@@ -612,7 +612,7 @@ def _renumber_content_ids(section: FormSection, section_num: int) -> None:
 def estimate_output_tokens(markdown: str) -> int:
 
     # Count checkbox symbols
-    checkbox_count = len(re.findall(r'[☐☑□■]', markdown))
+    checkbox_count = len(re.findall(r'[☐☑□■⬜]', markdown))
     bracket_checkbox_count = len(re.findall(r'\[\s*[xX]?\s*\]', markdown))
     
     # Count blank input patterns
@@ -1133,7 +1133,7 @@ def _extract_structure_regex(markdown: str, min_header_level: int = 2) -> Docume
                     content = markdown[start_pos:end_pos].strip()
                     
                     # Estimate fields in this chunk
-                    checkbox_count = len(re.findall(r'[☐☑□■\[\]]', content))
+                    checkbox_count = len(re.findall(r'[☐☑□■⬜\[\]]', content))
                     blank_count = len(re.findall(r'_{3,}|\.{5,}', content))
                     table_rows = len(re.findall(r'^\|[^-].*\|$', content, re.MULTILINE))
                     estimated_fields = checkbox_count + blank_count + int(table_rows * 0.5)
@@ -1244,7 +1244,7 @@ def _extract_structure_regex(markdown: str, min_header_level: int = 2) -> Docume
                 sub_title = f"{title} (Part {sub_idx + 1}/{num_sub_chunks})"
                 
                 # Estimate fields in sub-chunk
-                checkbox_count = len(re.findall(r'[☐☑□■\[\]]', sub_content))
+                checkbox_count = len(re.findall(r'[☐☑□■⬜\[\]]', sub_content))
                 blank_count = len(re.findall(r'_{3,}|\.{5,}', sub_content))
                 table_rows = len(re.findall(r'^\|[^-].*\|$', sub_content, re.MULTILINE))
                 estimated_fields = checkbox_count + blank_count + int(table_rows * 0.5)
@@ -1280,7 +1280,7 @@ def _extract_structure_regex(markdown: str, min_header_level: int = 2) -> Docume
             
             # Estimate field density
             content_len = len(content)
-            checkbox_count = len(re.findall(r'[☐☑□■\[\]]', content))
+            checkbox_count = len(re.findall(r'[☐☑□■⬜\[\]]', content))
             blank_count = len(re.findall(r'_{3,}|\.{5,}', content))
             table_rows = len(re.findall(r'^\|[^-].*\|$', content, re.MULTILINE))
             
@@ -2027,7 +2027,7 @@ def get_dynamic_validation_threshold(markdown: str) -> float:
 
     # Count form field indicators
     underscores = markdown.count("___")
-    checkboxes = markdown.count("[ ]") + markdown.count("☐") + markdown.count("☑")
+    checkboxes = markdown.count("[ ]") + markdown.count("☐") + markdown.count("☑") + markdown.count("⬜")
     dots = len(re.findall(r'\.{5,}', markdown))  
     table_pipes = markdown.count("|") // 4  
     
@@ -2115,7 +2115,7 @@ def validate_extraction_completeness(
                     extracted_count += 1
     
     # Estimate expected fields from markdown
-    checkbox_count = len(re.findall(r'[☐☑□■]', markdown))
+    checkbox_count = len(re.findall(r'[☐☑□■⬜]', markdown))
     bracket_count = len(re.findall(r'\[\s*[xX]?\s*\]', markdown))
     blank_count = len(re.findall(r'_{3,}|\.{3,}', markdown))
     table_rows = len(re.findall(r'^\|[^-].*\|$', markdown, re.MULTILINE))
