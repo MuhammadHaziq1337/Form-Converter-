@@ -5,14 +5,19 @@ WORKDIR /app
 # Copy only the Railway requirements
 COPY requirements.railway.txt .
 
-# Install torch CPU version first (lightweight, no CUDA)
-RUN pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+# Step 1: Install CPU-only PyTorch FIRST (saves ~3GB by preventing CUDA downloads)
+RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cpu
 
-# Install lightweight dependencies
+# Step 2: Install all other lightweight dependencies
 RUN pip install --no-cache-dir -r requirements.railway.txt
 
-# Install docling WITHOUT optional ML dependencies
-# This gives us DocumentConverter but skips torch/transformers/cuda
+# Step 3: Explicitly uninstall any CUDA/GPU packages that snuck in
+RUN pip uninstall -y nvidia-cuda-runtime-cu12 nvidia-cudnn-cu12 nvidia-cublas-cu12 \
+    nvidia-cuda-nvrtc-cu12 nvidia-cufft-cu12 nvidia-curand-cu12 nvidia-cusolver-cu12 \
+    nvidia-cusparse-cu12 nvidia-nccl-cu12 nvidia-nvjitlink-cu12 nvidia-cufile-cu12 \
+    accelerate docling-ibm-models || true
+
+# Step 4: Install docling WITHOUT optional ML dependencies
 RUN pip install --no-cache-dir --no-deps docling==2.65.0
 
 # Copy the entire app
