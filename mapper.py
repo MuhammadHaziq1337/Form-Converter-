@@ -1,10 +1,3 @@
-"""
-Mapper module to transform internal extraction schema to client-friendly format.
-
-This module bridges the gap between:
-- Internal Schema: What the LLM produces (semantic, flexible)
-- Client Schema: What the frontend expects (UI-ready with field_1, col_1 counters)
-"""
 
 from typing import Dict, List, Any, Optional
 from schemas import FormDocument, FormSection, FormField, FormTable
@@ -108,9 +101,7 @@ def transform_table_to_client(table: FormTable, table_counter: int) -> Dict[str,
     if len(interactive_headers) >= 2:
         radio_group = detect_radio_group([{"title": h} for h in interactive_headers])
     
-    # Analyze rows to detect which columns are editable (have empty cells that need input)
-    # A column is editable if it has at least one empty cell AND at least one non-empty cell
-    # OR if it's clearly an answer column (not the first label column)
+
     col_empty_counts = {f"col_{i+1}": 0 for i in range(len(headers))}
     col_filled_counts = {f"col_{i+1}": 0 for i in range(len(headers))}
     
@@ -124,9 +115,7 @@ def transform_table_to_client(table: FormTable, table_counter: int) -> Dict[str,
                 else:
                     col_empty_counts[col_key] += 1
     
-    # Determine editable columns:
-    # - Has empty cells AND is not the first column (usually labels)
-    # - OR has a mix of empty/filled (partial completion like "first one done for you")
+
     editable_cols = set()
     for i, header in enumerate(headers):
         col_key = f"col_{i + 1}"
@@ -134,8 +123,7 @@ def transform_table_to_client(table: FormTable, table_counter: int) -> Dict[str,
         has_filled = col_filled_counts.get(col_key, 0) > 0
         is_first_col = (i == 0)
         
-        # Editable if: not first column AND has empty cells
-        # OR: has both empty and filled (user should fill the rest)
+
         if has_empties and (not is_first_col or (has_filled and has_empties)):
             # Don't mark interactive columns as editable (they get radio buttons)
             if not is_interactive_column(header):
@@ -161,8 +149,7 @@ def transform_table_to_client(table: FormTable, table_counter: int) -> Dict[str,
             col_key = f"col_{i + 1}"
             header = headers[i] if i < len(headers) else ""
             
-            # For interactive columns, don't include empty values in row data
-            # The frontend will render radio buttons based on column type
+
             if radio_group and is_interactive_column(header):
                 # Only include if there's actual checked value (non-empty)
                 if cell.value and cell.value.strip():
@@ -230,12 +217,7 @@ def transform_section_to_client(
     field_counter: int,
     table_counter: int
 ) -> tuple[Dict[str, Any], int, int]:
-    """
-    Transform internal FormSection to client section format.
-    
-    Returns:
-        Tuple of (client_section, updated_field_counter, updated_table_counter)
-    """
+
     
     fields = []
     
@@ -279,18 +261,7 @@ def transform_section_to_client(
 
 
 def transform_to_client_format(doc: FormDocument) -> Dict[str, Any]:
-    """
-    Transform internal FormDocument to client-friendly format.
-    
-    This is the main entry point for the mapper.
-    
-    Args:
-        doc: Internal FormDocument from LLM extraction
-        
-    Returns:
-        Dict matching client JSON schema with field_1, section_1, col_1 counters
-    """
-    
+
     # Initialize counters
     field_counter = 0
     table_counter = 0
@@ -331,15 +302,7 @@ def transform_to_client_format(doc: FormDocument) -> Dict[str, Any]:
 
 
 def transform_to_client_dict(doc) -> Dict[str, Any]:
-    """
-    Convenience function that handles both FormDocument and dict input.
-    
-    Args:
-        doc: Either a FormDocument or a dict from model_dump()
-        
-    Returns:
-        Client-formatted dict
-    """
+
     if isinstance(doc, dict):
         # Convert dict back to FormDocument for processing
         doc = FormDocument(**doc)
@@ -348,14 +311,6 @@ def transform_to_client_dict(doc) -> Dict[str, Any]:
 
 
 def transform_dict_to_client(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Transform a dict (from JSON) to client format.
-    
-    Args:
-        data: Dict representation of internal schema
-        
-    Returns:
-        Client-formatted dict
-    """
+
     doc = FormDocument(**data)
     return transform_to_client_format(doc)

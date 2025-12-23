@@ -1,17 +1,3 @@
-"""
-Client-facing schemas for the frontend UI.
-
-This file defines the OUTPUT format expected by the client (wew.json format).
-The mapper.py transforms our internal FormDocument into this format.
-
-Key differences from internal schema:
-- fieldName uses auto-generated IDs: "field_1", "field_2", "table_1", etc.
-- fieldType is a simpler string enum
-- Tables use column keys (col_1, col_2) instead of explicit headers
-- Rows are dicts with column keys: {"col_1": "value", "col_2": "value"}
-- Section IDs are "section_1", "section_2", etc.
-"""
-
 from typing import List, Optional, Dict, Any, Literal, Union
 from pydantic import BaseModel, Field
 
