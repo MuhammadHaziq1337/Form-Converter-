@@ -194,7 +194,8 @@ def transform_field_to_client(field: FormField, field_counter: int) -> Dict[str,
         client_field["value"] = field.value
     
     if field.validation:
-        client_field["validation"] = field.validation
+        # Ensure validation is JSON-serializable
+        client_field["validation"] = field.validation.model_dump() if hasattr(field.validation, "model_dump") else field.validation
     
     if field.depends_on:
         client_field["dependsOn"] = field.depends_on
